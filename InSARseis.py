@@ -87,9 +87,17 @@ def calc_static_offset(src_file, db_dir, nx=400, ny=400):
 
     return all_data
 
-def plot_result(npy_file):
+def plot_result(src_file):
+    npy_file = '%s.npy' % (os.path.splitext(src_file)[0])
+    source = instaseis.FiniteSource.from_usgs_param_file(src_file)
+    pntsrc_lats = np.zeros(source.npointsources)
+    pntsrc_lons = np.zeros(source.npointsources)
+    pntsrc_depth = np.zeros(source.npointsources)
+    for i in range(0, source.npointsources):
+        pntsrc_depth[i] = source.pointsources[i].depth_in_m
+        pntsrc_lats[i] = source.pointsources[i].latitude
+        pntsrc_lons[i] = source.pointsources[i].longitude
 
-    all_data = np.load(npy_file)
     lats = all_data[0]
     lons = all_data[1]
     offset_E = all_data[2]
@@ -100,20 +108,20 @@ def plot_result(npy_file):
     vmax = np.round(np.max(np.abs((offset_E, offset_N, offset_Z)))/10, 1)
 
     fig = plt.figure(figsize=(15,15))
-    ax1 = plt.subplot(221)
+    ax1 = fig.add_subplot(221)
     h1 = ax1.pcolormesh(lons, lats, offset_E, vmin=vmin, vmax=vmax, cmap='seismic')
     ax1.set_title('E/W displacement')
 
-    ax2 = plt.subplot(222)
+    ax2 = fig.add_subplot(222)
     h2 = ax2.pcolormesh(lons, lats, offset_N, vmin=vmin, vmax=vmax, cmap='seismic')
     ax2.set_title('N/S displacement')
 
-    ax3 = plt.subplot(223)
+    ax3 = fig.add_subplot(223)
     h3 = ax3.pcolormesh(lons, lats, offset_Z, vmin=vmin, vmax=vmax, cmap='seismic')
     ax3.set_title('vertical displacement')
 
-    ax4 = plt.subplot(224)
-    h4 = ax4.scatter(y=pntsrc_lats, x=pntsrc_lons, c=pntsrc_depth, linewidths=0)
+    ax4 = fig.add_subplot(224)
+    h4 = ax4.scatter(y=pntsrc_lats, x=pntsrc_lons, c=pntsrc_depth/1e3, linewidths=0, cmap='GnBu')
     ax4.set_xlim(ax3.get_xlim())
     ax4.set_ylim(ax3.get_ylim())
     ax4.set_title('Fault')
@@ -121,18 +129,28 @@ def plot_result(npy_file):
     for ax in fig.axes:
         ax.set_ylabel('Latitude')
         ax.set_xlabel('Longitude')
-    ax_cbar = fig.add_axes([0.87, 0.15, 0.035, 0.7])
-    cbar = fig.colorbar(h1, cax=ax_cbar)
+    ax_cbar_disp = fig.add_axes([0.87, 0.536, 0.035, 0.365])
+    cbar_disp = fig.colorbar(h1, cax=ax_cbar_disp)
+    cbar_disp.set_label('displacement / m')
+    
+    ax_cbar_depth = fig.add_axes([0.87, 0.1, 0.035, 0.365])
+    cbar_depth = fig.colorbar(h4, cax=ax_cbar_depth)
+    cbar_depth.set_label('depth / km')
+
     fig.subplots_adjust(right=0.83)
-    cbar.set_label('displacement / m')
+
     
-    fnam = '%s.png' % (os.path.splitext(npy_file)[0])
+    png_file = '%s.png' % (os.path.splitext(src_file)[0])
+    print 'Saving to file %s' % png_file
     
-    fig.savefig(fnam)
+    fig.savefig(png_file, frameon=False)
+    plt.show()
+    
 
 if __name__ == '__main__':
     args = define_argument_parser()
 
     all_data = calc_static_offset(args.source_file_name, args.database_path)
+    plot_result(args.source_file_name)
 
 
