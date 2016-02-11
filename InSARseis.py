@@ -26,10 +26,13 @@ def define_argument_parser():
     parser.add_argument('-p', '--plot_only', help=helptext, default=False,
                         action='store_true')
 
+    helptext = 'Number of points in each direction (default:200)'
+    parser.add_argument('-n', '--npts', help=helptext, type=int, default=200)
+
     args = parser.parse_args()
     return args
 
-def calc_static_offset(src_file, db_dir, nx=400, ny=400):
+def calc_static_offset(src_file, db_dir, nx=200, ny=200):
     import obspy
     import instaseis
 
@@ -213,7 +216,10 @@ if __name__ == '__main__':
     args = define_argument_parser()
 
     if not args.plot_only:
-      all_data = calc_static_offset(args.source_file_name, args.database_path)
+      all_data = calc_static_offset(args.source_file_name, 
+                                    args.database_path,
+                                    nx=args.npts,
+                                    ny=args.npts)
 
     plot_result(args.source_file_name)
 
